@@ -1,0 +1,67 @@
+<html>
+
+  <head>
+  </head>
+  <body>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.0/lodash.min.js"></script>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="//js.pusher.com/2.2/pusher.min.js"></script>
+    <script type="text/javascript">
+      function mapRange(from, to, x) {
+        return to[0] + ( x - from[0] ) * (to[1] - to[0]) / (from[1] - from[0]);
+      }
+
+      window.onload = function() {
+
+        // WEB AUDIO SETUP
+        var audioCtx = new webkitAudioContext();
+        var source = audioCtx.createBufferSource();
+        var filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 1000000000;
+
+        // GETTING THE GSR VALUES
+        // see the producer/neulog.py file
+        var key = 'd5d9a0bbf3ee745375ba';
+        var faucet = new Pusher(key, {encrypted:true}).subscribe('everything');
+        var left = 0; // the starting left position of the bar graph
+        var w = 1; // the width of every bar in our graph
+
+        faucet.bind('neulogGSR', function (data) {
+            //console.log(data);
+            var gsr = _.sum(data.data.buffer) / data.data.buffer.length;
+            var h = gsr * 50;
+            $('body').append('<div style="left:'+left+'px; bottom:0; background:rgb(99,210,167); width:'+w+'px; position: absolute; height:'+h+'px;"></div>');
+            left += 1;
+
+            filter.frequency.value = mapRange([0.5, 3.5], [0, 3000], gsr); // we expect the GSR values to be between 0.5 and 3.5 but you should check this
+            console.log('filter.frequency.value', filter.frequency.value);
+        });
+
+        // LOAD THE SONG
+        var request = new XMLHttpRequest();
+        request.open('GET', 'from_nick.mp3', true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+          audioCtx.decodeAudioData(request.response, function(buf) {
+              source.buffer = buf;
+
+              // hooking up the audio stuff
+              source.connect(filter);
+              filter.connect(audioCtx.destination);
+
+              // starting the audio
+              source.start(0);
+
+
+              }, function error() {
+                console.log('error with request for song', request);   
+              }); // end of decoding audio
+        };
+        request.send(); // end of loading song 
+      }
+
+      </script>
+    </body>
+  </html>
