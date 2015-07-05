@@ -346,6 +346,7 @@ class indraSender(object):
     }
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     requests.post(self.indraURL, headers = headers, data=json.dumps(dataObj))
+    print 'posted neulog data'
     self.buffer = []
 
   def stop(self):
@@ -361,7 +362,6 @@ class indraSender(object):
 myGSR = gsr()
 sender = indraSender(myGSR)
 sender.start()
-print 'hi'
 
 #if __name__ == '__main__':
 #d = gsr()
