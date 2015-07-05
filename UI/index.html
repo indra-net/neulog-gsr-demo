@@ -30,7 +30,7 @@
           'F3': [ 'F3', 'E3', 'A3', 'D3', 'G3' ],
           'G3': [ 'G3', 'C3', 'C3', 'B3' ],
           'A3': [ 'A3', 'B3', 'G3', 'F3' ],
-          'B3': [ 'B3', 'C4' ],
+          'B3': [ 'B3', 'C4', 'C4', 'C4', 'C4', 'A3' ],
           'C4': [ 'C4', 'G3', 'A3', 'F3' ],
         };
         var note = _.keys(noteMap)[0];
@@ -46,7 +46,7 @@
 
       window.onload = function() {
 
-        var gsr = 1;
+        var gsr = 0;
 
         // WEB AUDIO SETUP
         var audioCtx = new AudioContext();
@@ -57,9 +57,10 @@
         tone.start(0);
 
         function changeSound() {
-          tone.frequency.value = getNextFreq();
-          console.log('changeSound', tone.frequency.value);
-          setTimeout(changeSound, 1000 * gsr);
+          //tone.frequency.value = getNextFreq();
+          tone.frequency.value = mapRange([0.0, 4.0], [100, 1000], gsr);
+          console.log('changeSound: frequency', tone.frequency.value, 'gsr', gsr);
+          setTimeout(changeSound, mapRange([0.0, 4.0], [50, 2000], gsr));
         }
         changeSound();
 
