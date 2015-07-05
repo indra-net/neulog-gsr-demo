@@ -11,15 +11,57 @@
       function mapRange(from, to, x) {
         return to[0] + ( x - from[0] ) * (to[1] - to[0]) / (from[1] - from[0]);
       }
+      
+      var getNextFreq = (function() {
+        var freq = {
+          'C3': 130.81,
+          'D3': 146.83,
+          'E3': 164.81,
+          'F3': 174.61,
+          'G3': 196.0,
+          'A3': 220.0,
+          'B3': 246.94,
+          'C4': 261.63,
+        };
+        var noteMap =  { 
+          'C3': [ 'C3', 'G3', 'G3', 'E3', 'F3', 'A3', 'B3' ],
+          'D3': [ 'D3', 'A3', 'F3', 'E3' , 'B3' ],
+          'E3': [ 'E3', 'C3', 'G3', 'A3' ],
+          'F3': [ 'F3', 'E3', 'A3', 'D3', 'G3' ],
+          'G3': [ 'G3', 'C3', 'C3', 'B3' ],
+          'A3': [ 'A3', 'B3', 'G3', 'F3' ],
+          'B3': [ 'B3', 'C4' ],
+          'C4': [ 'C4', 'G3', 'A3', 'F3' ],
+        };
+        var note = _.keys(noteMap)[0];
+        console.log('starting note', note);
+        return function() {
+          var options = noteMap[note];
+          var i = parseInt(Math.random() * options.length);
+          note = options[i];
+          console.log('note', note);
+          return freq[note];
+        };
+      })();
 
       window.onload = function() {
 
+        var gsr = 1;
+
         // WEB AUDIO SETUP
-        var audioCtx = new webkitAudioContext();
-        var source = audioCtx.createBufferSource();
-        var filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 1000000000;
+        var audioCtx = new AudioContext();
+        var tone = audioCtx.createOscillator();
+        tone.connect(audioCtx.destination);
+        tone.type = "triangle";
+        tone.frequency.value = 200;
+        tone.start(0);
+
+        function changeSound() {
+          tone.frequency.value = getNextFreq();
+          console.log('changeSound', tone.frequency.value);
+          setTimeout(changeSound, 1000 * gsr);
+        }
+        changeSound();
 
         // GETTING THE GSR VALUES
         // see the producer/neulog.py file
@@ -29,39 +71,20 @@
         var w = 1; // the width of every bar in our graph
 
         faucet.bind('neulogGSR', function (data) {
-            //console.log(data);
-            var gsr = _.sum(data.data.buffer) / data.data.buffer.length;
-            var h = gsr * 50;
-            $('body').append('<div style="left:'+left+'px; bottom:0; background:rgb(99,210,167); width:'+w+'px; position: absolute; height:'+h+'px;"></div>');
-            left += 1;
+          // average GSR value for that short time period
+          gsr = _.sum(data.data.buffer) / data.data.buffer.length;
 
-            filter.frequency.value = mapRange([0.5, 3.5], [0, 3000], gsr); // we expect the GSR values to be between 0.5 and 3.5 but you should check this
-            console.log('filter.frequency.value', filter.frequency.value);
+          // visualization
+          var h = gsr * 50;
+          $('body').append('<div style="left:'+left+'px; bottom:0; background:rgb(99,210,167); width:'+w+'px; position: absolute; height:'+h+'px;"></div>');
+          left += 1;
+
+          // sonification
+          //tone.frequency.value = 
         });
 
-        // LOAD THE SONG
-        var request = new XMLHttpRequest();
-        request.open('GET', 'from_nick.mp3', true);
-        request.responseType = 'arraybuffer';
-        request.onload = function() {
-          audioCtx.decodeAudioData(request.response, function(buf) {
-              source.buffer = buf;
-
-              // hooking up the audio stuff
-              source.connect(filter);
-              filter.connect(audioCtx.destination);
-
-              // starting the audio
-              source.start(0);
-
-
-              }, function error() {
-                console.log('error with request for song', request);   
-              }); // end of decoding audio
-        };
-        request.send(); // end of loading song 
       }
 
-      </script>
-    </body>
-  </html>
+    </script>
+  </body>
+</html>
