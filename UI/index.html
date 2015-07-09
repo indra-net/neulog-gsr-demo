@@ -16,17 +16,42 @@
 
         // WEB AUDIO SETUP
         var audioCtx = new AudioContext();
-        var tone = audioCtx.createOscillator();
-        tone.connect(audioCtx.destination);
-        tone.type = "triangle";
-        tone.frequency.value = 200;
-        tone.start(0);
 
-        function changeSound(gsr) {
-          var freq = mapRange([0.0, 4.0], [100, 1000], gsr);
-          console.log('\tfrequency', freq);
-          tone.frequency.value = freq;
-        }
+        // soundCtrl plays sounds and changes them based on the data you give
+        // it with soundCtrl.update(data), where data is a number
+        var soundCtrl = (function() {
+
+          var tone = audioCtx.createOscillator();
+          tone.type = "triangle";
+          tone.frequency.value = 0;
+
+          var gain = audioCtx.createGain();
+          gain.gain.value = 0.5;
+
+          tone.connect(gain);
+          gain.connect(audioCtx.destination);
+          tone.start(0);
+
+          var prev_d = null;
+
+          function update(d) {
+            var freq = mapRange([0.0, 4.0], [0, 1000], d);
+            console.log('\tfrequency', freq);
+            tone.frequency.value = freq;
+
+            var diff = prev_d === null ? 0 : (d - prev_d) / prev_d;
+            var newgain = 0.5 + diff*3;
+            console.log('\tgain', newgain);
+            gain.gain.value = newgain;
+            gain.gain.value = Math.max(Math.min(gain.gain.value, 1), 0);
+
+            prev_d = d;
+          }
+
+          return {
+            update: update,
+          };
+        })();
 
         // GETTING THE GSR VALUES
         // see the producer/neulog.py file
@@ -39,7 +64,7 @@
           // average GSR value for that short time period
           var gsr = _.sum(data.data.buffer) / data.data.buffer.length;
           console.log('gsr', gsr);
-          changeSound(gsr);
+          soundCtrl.update(gsr);
 
           // visualization
           var h = gsr * 50;
