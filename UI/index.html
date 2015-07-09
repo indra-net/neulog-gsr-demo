@@ -11,42 +11,8 @@
       function mapRange(from, to, x) {
         return to[0] + ( x - from[0] ) * (to[1] - to[0]) / (from[1] - from[0]);
       }
-      
-      var getNextFreq = (function() {
-        var freq = {
-          'C3': 130.81,
-          'D3': 146.83,
-          'E3': 164.81,
-          'F3': 174.61,
-          'G3': 196.0,
-          'A3': 220.0,
-          'B3': 246.94,
-          'C4': 261.63,
-        };
-        var noteMap =  { 
-          'C3': [ 'C3', 'G3', 'G3', 'E3', 'F3', 'A3', 'B3' ],
-          'D3': [ 'D3', 'A3', 'F3', 'E3' , 'B3' ],
-          'E3': [ 'E3', 'C3', 'G3', 'A3' ],
-          'F3': [ 'F3', 'E3', 'A3', 'D3', 'G3' ],
-          'G3': [ 'G3', 'C3', 'C3', 'B3' ],
-          'A3': [ 'A3', 'B3', 'G3', 'F3' ],
-          'B3': [ 'B3', 'C4', 'C4', 'C4', 'C4', 'A3' ],
-          'C4': [ 'C4', 'G3', 'A3', 'F3' ],
-        };
-        var note = _.keys(noteMap)[0];
-        console.log('starting note', note);
-        return function() {
-          var options = noteMap[note];
-          var i = parseInt(Math.random() * options.length);
-          note = options[i];
-          console.log('note', note);
-          return freq[note];
-        };
-      })();
 
       window.onload = function() {
-
-        var gsr = 0;
 
         // WEB AUDIO SETUP
         var audioCtx = new AudioContext();
@@ -56,13 +22,11 @@
         tone.frequency.value = 200;
         tone.start(0);
 
-        function changeSound() {
-          //tone.frequency.value = getNextFreq();
-          tone.frequency.value = mapRange([0.0, 4.0], [100, 1000], gsr);
-          console.log('changeSound: frequency', tone.frequency.value, 'gsr', gsr);
-          setTimeout(changeSound, mapRange([0.0, 4.0], [50, 2000], gsr));
+        function changeSound(gsr) {
+          var freq = mapRange([0.0, 4.0], [100, 1000], gsr);
+          console.log('\tfrequency', freq);
+          tone.frequency.value = freq;
         }
-        changeSound();
 
         // GETTING THE GSR VALUES
         // see the producer/neulog.py file
@@ -73,15 +37,14 @@
 
         faucet.bind('neulogGSR', function (data) {
           // average GSR value for that short time period
-          gsr = _.sum(data.data.buffer) / data.data.buffer.length;
+          var gsr = _.sum(data.data.buffer) / data.data.buffer.length;
+          console.log('gsr', gsr);
+          changeSound(gsr);
 
           // visualization
           var h = gsr * 50;
           $('body').append('<div style="left:'+left+'px; bottom:0; background:rgb(99,210,167); width:'+w+'px; position: absolute; height:'+h+'px;"></div>');
           left += 1;
-
-          // sonification
-          //tone.frequency.value = 
         });
 
       }
