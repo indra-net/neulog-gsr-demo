@@ -17,7 +17,7 @@
 var left = 0; // the starting left position of the bar graph
 var w = 1; // the width of every bar in our graph
 
-var socket = new io.Socket('ws://indra.webfactional.com');
+var socket = new io.Socket('http://indra.webfactional.com');
 console.log('created socket', socket);
 socket.on('neulogGSR', function(data) {
     // average GSR value for that short time period
