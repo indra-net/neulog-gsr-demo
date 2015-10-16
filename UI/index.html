@@ -12,101 +12,26 @@
         return to[0] + ( x - from[0] ) * (to[1] - to[0]) / (from[1] - from[0]);
       }
 
-      window.onload = function() {
+// GETTING THE GSR VALUES
+// see the producer/neulog.py file
+var key = 'd5d9a0bbf3ee745375ba';
+var faucet = new Pusher(key, {encrypted:true}).subscribe('everything');
+console.log('created a Pusher faucet', faucet);
+var left = 0; // the starting left position of the bar graph
+var w = 1; // the width of every bar in our graph
 
-        // WEB AUDIO SETUP
-        var audioCtx = new AudioContext();
+faucet.bind('neulogGSR', function (data) {
+    // average GSR value for that short time period
+    var gsr = _.sum(data.data.buffer) / data.data.buffer.length;
+    console.log('gsr', gsr);
 
-        // soundCtrl plays sounds and changes them based on the data you give
-        // it with soundCtrl.update(data), where data is a number
-        var soundCtrl = (function() {
+    // visualization
+    var h = gsr * 50;
+    $('body').append('<div style="left:'+left+'px; bottom:0; background:rgb(99,210,167); width:'+w+'px; position: absolute; height:'+h+'px;"></div>');
+    left += 1;
+});
 
-          // soundCtrl needs to remember the previous number you gave it
-          var prev_d = null;
 
-          // to store our mp3 that we will load
-          var source = audioCtx.createBufferSource();
-
-          // gain controls the volume
-          var gain = audioCtx.createGain();
-          // valid gain.gain.value is 0 - 1, otherwise you might hurt ppl's ears
-          gain.gain.value = 0.5;
-
-          // loading the mp3
-          var request = new XMLHttpRequest();
-          request.open('GET', 'from_nick.mp3', true);
-          request.responseType = 'arraybuffer';
-          request.onload = function() {
-            console.log('request came back', arguments, request.response);
-            audioCtx.decodeAudioData(request.response, function(buf) {
-              console.log('buf', buf);
-              // save the audio buffer to our source
-              source.buffer = buf;
-
-              // hooking it up: source -> gain -> speakers
-              source.connect(gain);
-              gain.connect(audioCtx.destination);
-
-              // play now
-              source.start(0);
-            }, function() {
-              console.log('error', arguments);
-            });
-          };
-          request.send();
-
-          function update(d) {
-            // TODO normalize the incoming audio so its dynamics don't matter
-            // TODO better spike detection
-
-            // percent change between current and previous numbers d
-            // the first time this function is called prev_d is null so we check for that
-            var diff = prev_d === null ? 0 : (d - prev_d) / prev_d;
-
-            var newgain;
-            if (diff > 0) {
-              // exponential decay toward 1.0 (max gain)
-              newgain = gain.gain.value + (1.0 - gain.gain.value) * diff*10;
-            } else {
-              // exponential decay toward 0.25 (softly playing)
-              newgain = gain.gain.value + (0.25 - gain.gain.value) * 0.5;
-            }
-            console.log('\tdiff', diff, 'gain', newgain);
-
-            gain.gain.value = newgain;
-
-            // always make sure gain is between 0 and 1 so you don't hurt anyone's ears
-            gain.gain.value = Math.max(Math.min(gain.gain.value, 1), 0);
-
-            prev_d = d;
-          }
-
-          return {
-            update: update,
-          };
-        })();
-
-        // GETTING THE GSR VALUES
-        // see the producer/neulog.py file
-        var key = 'd5d9a0bbf3ee745375ba';
-        var faucet = new Pusher(key, {encrypted:true}).subscribe('everything');
-        var left = 0; // the starting left position of the bar graph
-        var w = 1; // the width of every bar in our graph
-
-        faucet.bind('neulogGSR', function (data) {
-          // average GSR value for that short time period
-          var gsr = _.sum(data.data.buffer) / data.data.buffer.length;
-          console.log('gsr', gsr);
-          soundCtrl.update(gsr);
-
-          // visualization
-          var h = gsr * 50;
-          $('body').append('<div style="left:'+left+'px; bottom:0; background:rgb(99,210,167); width:'+w+'px; position: absolute; height:'+h+'px;"></div>');
-          left += 1;
-        });
-
-      }
-
-    </script>
+</script>
   </body>
 </html>
