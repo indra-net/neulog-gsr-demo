@@ -337,12 +337,10 @@ class indraSender(object):
   def addToBuffer(self, d):
     self.buffer.append(d)
 
-  def pushBufferToIndra(self):
+  def publishBuffer(self):
     dataObj = {
-        "type": "neulogGSR",
-        "data": {
-            "buffer": self.buffer
-        }
+        "type": "neulogGSR",   # "type" is a required field
+        "buffer": self.buffer  # aside from "type", we can have any arbitrary fields
     }
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     requests.post(self.indraURL, headers = headers, data=json.dumps(dataObj))
@@ -357,13 +355,8 @@ class indraSender(object):
         # print 'getting data'
         self.addToBuffer(self.gsr.get_data())
         if len(self.buffer) > self.bufferSize:
-            self.pushBufferToIndra()
+            self.publishBuffer()
 
 myGSR = gsr()
 sender = indraSender(myGSR)
 sender.start()
-
-#if __name__ == '__main__':
-#d = gsr()
-#while True:
-  #print d.get_data()
