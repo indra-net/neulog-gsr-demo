@@ -6,7 +6,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.0/lodash.min.js"></script>
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script src="//js.pusher.com/2.2/pusher.min.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script type="text/javascript">
       function mapRange(from, to, x) {
         return to[0] + ( x - from[0] ) * (to[1] - to[0]) / (from[1] - from[0]);
@@ -14,13 +14,12 @@
 
 // GETTING THE GSR VALUES
 // see the producer/neulog.py file
-var key = 'd5d9a0bbf3ee745375ba';
-var faucet = new Pusher(key, {encrypted:true}).subscribe('everything');
-console.log('created a Pusher faucet', faucet);
 var left = 0; // the starting left position of the bar graph
 var w = 1; // the width of every bar in our graph
 
-faucet.bind('neulogGSR', function (data) {
+var socket = new io.Socket('ws://indra.webfactional.com');
+console.log('created socket', socket);
+socket.on('neulogGSR', function(data) {
     // average GSR value for that short time period
     var gsr = _.sum(data.data.buffer) / data.data.buffer.length;
     console.log('gsr', gsr);
